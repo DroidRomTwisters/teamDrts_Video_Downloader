@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/homeFragment"
+        android:icon="@drawable/ic_baseline_home_24"
+        android:title="Home" />
+
+    <item
+        android:id="@+id/videoFragment"
+        android:icon="@drawable/ic_baseline_play_circle_filled_24"
+        android:title="Video" />
+
+
+    <item
+        android:id="@+id/audioFragment"
+        android:icon="@drawable/ic_baseline_audiotrack_24"
+        android:title="Audio" />
+
+    <item
+        android:id="@+id/downloadFragment"
+        android:icon="@drawable/ic_baseline_save_alt_24"
+        android:title="Downloads" />
+</menu>
