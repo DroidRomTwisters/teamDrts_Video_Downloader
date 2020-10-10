@@ -52,7 +52,7 @@
         android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Click On Search Icon and paste The url of the video. And click on search to start download"
+        android:text="@string/star_guie"
         android:textColor="#403E3E"
         app:layout_constraintTop_toBottomOf="@id/toolbar_image"
         app:layout_constraintStart_toStartOf="parent"

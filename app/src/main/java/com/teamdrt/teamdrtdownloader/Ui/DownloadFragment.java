@@ -55,6 +55,7 @@ public class DownloadFragment extends Fragment {
             mParam1 = getArguments ().getString ( ARG_PARAM1 );
             mParam2 = getArguments ().getString ( ARG_PARAM2 );
         }
+        setRetainInstance ( true );
     }
 
     @Override

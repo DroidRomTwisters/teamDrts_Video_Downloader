@@ -14,7 +14,7 @@
         android:layout_height="match_parent"
         android:layout_centerInParent="true"
         app:defaultNavHost="true"
-        app:navGraph="@navigation/my_nav" />
+        app:navGraph="@navigation/my_nav"/>
 
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -25,4 +25,6 @@
         android:background="#ffffff"
         app:elevation="15dp"
         app:menu="@menu/bottom_navigation_menu" />
+
+
 </RelativeLayout>

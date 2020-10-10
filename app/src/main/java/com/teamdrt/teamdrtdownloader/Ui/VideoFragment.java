@@ -2,19 +2,24 @@ package com.teamdrt.teamdrtdownloader.Ui;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Notification;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.icu.text.CaseMap;
 import android.inputmethodservice.Keyboard;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -40,6 +45,7 @@ import com.bumptech.glide.Glide;
 import com.google.android.material.appbar.AppBarLayout;
 import com.teamdrt.teamdrtdownloader.Adapters.VidInfoAdapter;
 import com.teamdrt.teamdrtdownloader.R;
+import com.teamdrt.teamdrtdownloader.Utils.NumberUtils;
 import com.yausername.ffmpeg.FFmpeg;
 import com.yausername.youtubedl_android.BuildConfig;
 import com.yausername.youtubedl_android.DownloadProgressCallback;
@@ -51,6 +57,7 @@ import com.yausername.youtubedl_android.mapper.VideoInfo;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Objects;
 
 import io.reactivex.Observable;
@@ -59,6 +66,7 @@ import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
+import static com.teamdrt.teamdrtdownloader.App.CHANNEL_ID;
 import static com.teamdrt.teamdrtdownloader.Ui.MainActivity.mctx;
 
 /**
@@ -74,17 +82,20 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
     private VidInfoAdapter vidInfoAdapter;
     private ArrayList<String> videores,ext,formatid;
     private String link;
+    private String thumbnaillink;
     private ImageView toolbar_image;
     ProgressBar progressBar;
     Toolbar toolbar;
     ActionBar actionBar;
     VideoInfo videoInfo;
+    NotificationCompat.Builder notification;
     private boolean downloading = false;
     private CompositeDisposable compositeDisposable = new CompositeDisposable();
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
+    private NotificationManagerCompat notificationManagerCompat;
 
     // TODO: Rename and change types of parameters
     private String mParam1;
@@ -108,8 +119,7 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         @Override
         public void onProgressUpdate(final float progress, final long etaInSeconds) {
             getActivity ().runOnUiThread( () -> {
-                        progressBar.setProgress ( (int) progress );
-                        //tvDownloadStatus.setText ( String.valueOf ( progress ) + "% (ETA " + String.valueOf ( etaInSeconds ) + " seconds)" );
+                        updateNotification ( (int) progress,false,null);
                     }
             );
         }
@@ -131,6 +141,8 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
             mParam1 = getArguments ().getString ( ARG_PARAM1 );
             mParam2 = getArguments ().getString ( ARG_PARAM2 );
         }
+        //setRetainInstance ( true );
+
 
     }
 
@@ -147,11 +159,27 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         videolist.setLayoutManager ( new LinearLayoutManager ( mctx ) );
         progressBar=v.findViewById ( R.id.progressBar );
         title=v.findViewById ( R.id.textView );
-        //pbvisibility ( 0 );
+        notificationManagerCompat=NotificationManagerCompat.from ( mctx );
         return v;
     }
 
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated ( view, savedInstanceState );
+        if (savedInstanceState!=null){
+            videores=savedInstanceState.getStringArrayList ( "videores" );
+            ext=savedInstanceState.getStringArrayList ( "ext" );
+            formatid=savedInstanceState.getStringArrayList ( "formatid" );
+            thumbnaillink=savedInstanceState.getString ( "thumbnaillink" );
+            setAdapters ();
+        }
+    }
 
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored ( savedInstanceState );
+
+    }
 
     @Override
     public void onResume() {
@@ -183,8 +211,6 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         startDownload (formatid);
     }
 
-    
-
     private class getdetails extends AsyncTask<String,String,String>{
 
         @Override
@@ -195,9 +221,12 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
                 for (int i=0;i<formats.size ();i++){
                     VideoFormat videoFormat=formats.get ( i );
                     if(videoFormat.getWidth ()!=0 && videoFormat.getHeight ()!=0) {
-                        formatid.add ( videoFormat.getFormatId ());
-                        videores.add (videoFormat.getFormat() + videoFormat.getAcodec ());
-                        ext.add ( videoFormat.getExt () );
+                        if (!formatid.contains ( videoFormat.getFormatId () )) {
+                            formatid.add ( videoFormat.getFormatId () );
+                            String size = NumberUtils.format ( videoFormat.getFilesize () );
+                            videores.add ( videoFormat.getFormat () + "  -" + size );
+                            ext.add ( videoFormat.getExt () );
+                        }
                     }
                 }
             } catch (YoutubeDLException e) {
@@ -211,24 +240,24 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute ( s );
-            Glide.with ( mctx ).load ( videoInfo.getThumbnail () ).into ( toolbar_image );
-            vidInfoAdapter=new VidInfoAdapter ( mctx,videores,ext ,formatid, VideoFragment.this );
-            videolist.setAdapter ( vidInfoAdapter );
-            title.setText ( videoInfo.getTitle () );
+            thumbnaillink = videoInfo.getThumbnail ();
+            setAdapters ();
             hideKeyboard ( getActivity () );
 
         }
     }
 
     public static void hideKeyboard(Activity activity) {
-        InputMethodManager imm = (InputMethodManager) activity.getSystemService(Activity.INPUT_METHOD_SERVICE);
-        View view = activity.getCurrentFocus();
-        if (view == null) {
-            view = new View(activity);
-        }
-        if (imm != null) {
-            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-            view.clearFocus();
+        if (activity!=null) {
+            InputMethodManager imm = (InputMethodManager) activity.getSystemService ( Activity.INPUT_METHOD_SERVICE );
+            View view = activity.getCurrentFocus ();
+            if (view == null) {
+                view = new View ( activity );
+            }
+            if (imm != null) {
+                imm.hideSoftInputFromWindow ( view.getWindowToken (), 0 );
+                view.clearFocus ();
+            }
         }
     }
 
@@ -261,9 +290,9 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         YoutubeDLRequest request = new YoutubeDLRequest(link);
         File youtubeDLDir = getDownloadLocation();
         request.addOption ( "-f",formatid+"+bestaudio" );
-        request.addOption("-o", youtubeDLDir.getAbsolutePath() + "/%(title)s"+videoInfo.getResolution ()+".%(ext)s");
+        request.addOption("-o", youtubeDLDir.getAbsolutePath() + "/%(title)s"+"_"+formatid+".%(ext)s");
 
-        //showStart();
+        showNotification (videoInfo.getTitle ());
 
         downloading = true;
 
@@ -271,16 +300,13 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
                 .subscribeOn( Schedulers.newThread())
                 .observeOn( AndroidSchedulers.mainThread())
                 .subscribe(youtubeDLResponse -> {
-                    //TODO pbLoading.setVisibility(View.GONE);
-                    //TODO progressBar.setProgress(100);
-                    //TODO tvDownloadStatus.setText("Download completed");
+                    updateNotification ( 0,true ,"Download finished");
                     //TODO tvCommandOutput.setText(youtubeDLResponse.getOut());
                     Toast.makeText(mctx, "download successful", Toast.LENGTH_LONG).show();
                     downloading = false;
                 }, e -> {
                     if(BuildConfig.DEBUG) Log.e(TAG,  "failed to download", e);
-                    //TODO pbLoading.setVisibility(View.GONE);
-                    //TODO tvDownloadStatus.setText("download failed!!");
+                    updateNotification ( 0,true ,"Download failed");
                     //TODO tvCommandOutput.setText(e.getMessage());
                     Toast.makeText(mctx, "download failed", Toast.LENGTH_LONG).show();
                     downloading = false;
@@ -300,5 +326,56 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
     public void onDestroy() {
         compositeDisposable.dispose();
         super.onDestroy ();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause ();
+    }
+
+    public void showNotification(String Title){
+
+        notification = new NotificationCompat.Builder ( mctx,CHANNEL_ID )
+                .setSmallIcon ( android.R.drawable.stat_sys_download )
+                .setContentTitle ( "Downloading "+Title)
+                .setContentText ( "Download In Progress" )
+                .setPriority ( NotificationCompat.PRIORITY_LOW )
+                .setCategory ( NotificationCompat.CATEGORY_PROGRESS)
+                .setProgress ( 100,0,false )
+                .setOngoing ( true )
+                .setAutoCancel ( true )
+                .setOnlyAlertOnce ( true );
+
+        notificationManagerCompat.notify ( 1,notification.build () );
+    }
+
+    public void updateNotification(int Progress, boolean dismiss, @Nullable String Title){
+        if (!dismiss) {
+            notification.setProgress ( 100, Progress, false );
+            notificationManagerCompat.notify ( 1, notification.build () );
+        }else {
+            notification.setSmallIcon ( R.drawable.ic_24px );
+            notification.setContentText ( Title );
+            notification.setProgress ( 0, Progress, false );
+            notification.setOngoing ( false );
+            notificationManagerCompat.notify ( 1, notification.build () );
+        }
+    }
+
+    @Override
+    public void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState ( outState );
+        outState.putStringArrayList ( "videores",videores );
+        outState.putStringArrayList ( "ext",ext );
+        outState.putStringArrayList ( "formatid",formatid );
+        outState.putString ( "link",link );
+        outState.putString ( "thumbnaillink",thumbnaillink );
+    }
+
+    public void setAdapters(){
+        Glide.with ( mctx ).load ( thumbnaillink ).into ( toolbar_image );
+        vidInfoAdapter=new VidInfoAdapter ( mctx,videores,ext ,formatid, VideoFragment.this );
+        videolist.setAdapter ( vidInfoAdapter );
+        title.setText ( videoInfo.getTitle () );
     }
 }
