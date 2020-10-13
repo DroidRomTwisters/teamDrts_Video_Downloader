@@ -40,12 +40,20 @@ public class VidInfoAdapter extends RecyclerView.Adapter<VideoInfoVh> {
     @Override
     public void onBindViewHolder(@NonNull VideoInfoVh holder, int position) {
         String videoInfo=videores.get ( position );
-        holder.setdetail ( videoInfo,ext.get ( position ) );
+        holder.videores.setText ( videoInfo );
+        holder.videoformat.setText ( ext.get ( position ) );
+    }
 
+
+    public void setDetail(ArrayList<String> videoInfos,ArrayList<String> ext,ArrayList<String> formatid){
+        this.videores=videoInfos;
+        this.ext=ext;
+        this.formatid=formatid;
+        notifyDataSetChanged ();
     }
 
     public interface ClickListener{
-        void OnDownloadClick(String formatid) throws YoutubeDLException, InterruptedException;
+        void OnDownloadClick(int position) throws YoutubeDLException, InterruptedException;
     }
     @Override
     public int getItemCount() {

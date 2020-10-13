@@ -2,35 +2,28 @@ package com.teamdrt.teamdrtdownloader.Ui;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.Notification;
-import android.content.Context;
 import android.content.pm.PackageManager;
-import android.icu.text.CaseMap;
-import android.inputmethodservice.Keyboard;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.SearchView;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Data;
+import androidx.work.ExistingWorkPolicy;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkInfo;
+import androidx.work.WorkManager;
 
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.text.TextUtils;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -42,88 +35,48 @@ import android.widget.Toast;
 
 
 import com.bumptech.glide.Glide;
-import com.google.android.material.appbar.AppBarLayout;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.teamdrt.teamdrtdownloader.Adapters.VidInfoAdapter;
 import com.teamdrt.teamdrtdownloader.R;
 import com.teamdrt.teamdrtdownloader.Utils.NumberUtils;
-import com.yausername.ffmpeg.FFmpeg;
-import com.yausername.youtubedl_android.BuildConfig;
-import com.yausername.youtubedl_android.DownloadProgressCallback;
-import com.yausername.youtubedl_android.YoutubeDL;
-import com.yausername.youtubedl_android.YoutubeDLException;
-import com.yausername.youtubedl_android.YoutubeDLRequest;
+import com.teamdrt.teamdrtdownloader.ViewModels.VidInfoVM;
+import com.teamdrt.teamdrtdownloader.WorkManager.DownloadWM;
 import com.yausername.youtubedl_android.mapper.VideoFormat;
 import com.yausername.youtubedl_android.mapper.VideoInfo;
 
-import java.io.File;
 import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
 
-import io.reactivex.Observable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
-
-import static com.teamdrt.teamdrtdownloader.App.CHANNEL_ID;
 import static com.teamdrt.teamdrtdownloader.Ui.MainActivity.mctx;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link VideoFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListener {
 
+    private VidInfoVM vidInfoVM;
     private static final String TAG = "arya";
     private TextView title;
     private RecyclerView videolist;
     private VidInfoAdapter vidInfoAdapter;
     private ArrayList<String> videores,ext,formatid;
-    private String link;
-    private String thumbnaillink;
+    private ArrayList<VideoFormat> videoFormats;
+
     private ImageView toolbar_image;
     ProgressBar progressBar;
     Toolbar toolbar;
-    ActionBar actionBar;
     VideoInfo videoInfo;
-    NotificationCompat.Builder notification;
-    private boolean downloading = false;
-    private CompositeDisposable compositeDisposable = new CompositeDisposable();
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+    private String url;
+
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
     private NotificationManagerCompat notificationManagerCompat;
-
-    // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
 
     public VideoFragment() {
-        // Required empty public constructor
+
+
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment VideoFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-
-    private DownloadProgressCallback callback = new DownloadProgressCallback() {
-        @Override
-        public void onProgressUpdate(final float progress, final long etaInSeconds) {
-            getActivity ().runOnUiThread( () -> {
-                        updateNotification ( (int) progress,false,null);
-                    }
-            );
-        }
-    };
 
     public static VideoFragment newInstance(String param1, String param2) {
         VideoFragment fragment = new VideoFragment ();
@@ -141,9 +94,6 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
             mParam1 = getArguments ().getString ( ARG_PARAM1 );
             mParam2 = getArguments ().getString ( ARG_PARAM2 );
         }
-        //setRetainInstance ( true );
-
-
     }
 
     @Override
@@ -157,7 +107,6 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         ext=new ArrayList <> (  );
         formatid=new ArrayList <> (  );
         videolist.setLayoutManager ( new LinearLayoutManager ( mctx ) );
-        progressBar=v.findViewById ( R.id.progressBar );
         title=v.findViewById ( R.id.textView );
         notificationManagerCompat=NotificationManagerCompat.from ( mctx );
         return v;
@@ -166,25 +115,60 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated ( view, savedInstanceState );
-        if (savedInstanceState!=null){
-            videores=savedInstanceState.getStringArrayList ( "videores" );
-            ext=savedInstanceState.getStringArrayList ( "ext" );
-            formatid=savedInstanceState.getStringArrayList ( "formatid" );
-            thumbnaillink=savedInstanceState.getString ( "thumbnaillink" );
-            setAdapters ();
-        }
+        progressBar=view.findViewById ( R.id.progressBar );
+        initviews ( view );
     }
 
-    @Override
-    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
-        super.onViewStateRestored ( savedInstanceState );
+    private void initviews(View v){
+        vidInfoVM= new ViewModelProvider (VideoFragment.this).get ( VidInfoVM.class );
+        vidInfoVM.videoinfo.observe ( getViewLifecycleOwner(), videoInfo -> {
+            this.videoInfo=videoInfo;
+            this.videoFormats=videoInfo.getFormats ();
+            title.setText ( videoInfo.getTitle () );
+            ArrayList<VideoFormat> formats =videoInfo.getFormats ();
+            for (int i=0;i<formats.size ();i++){
+                VideoFormat videoFormat=formats.get ( i );
+                if(videoFormat.getWidth ()!=0 && videoFormat.getHeight ()!=0) {
+                    if (!formatid.contains ( videoFormat.getFormatId () )) {
+                        formatid.add ( videoFormat.getFormatId () );
+                        String size = NumberUtils.format ( videoFormat.getFilesize () );
+                        videores.add ( videoFormat.getFormat () + "  -" + size );
+                        ext.add ( videoFormat.getExt () );
+                    }
+                }
+            }
+            vidInfoAdapter=new VidInfoAdapter ( mctx,videores,ext ,formatid, VideoFragment.this );
+            videolist.setAdapter ( vidInfoAdapter );
+        } );
+
+        vidInfoVM.thumbnail.observe ( getViewLifecycleOwner(), s -> {
+            if (s!=null) {
+                Glide.with ( mctx ).load ( videoInfo.getThumbnail () ).into ( toolbar_image );
+            }else {
+                Glide.with ( mctx ).load ( R.mipmap.ic_launcher_round ).into ( toolbar_image );
+            }
+        } );
+
+
+        vidInfoVM.url.observe ( getViewLifecycleOwner (),url ->{
+            this.url=url;
+        } );
+
+        vidInfoVM.LoadState.observe ( getViewLifecycleOwner(), loadstate -> {
+            progressBar.setVisibility ( View.VISIBLE );
+        });
 
     }
+
+
+
+
 
     @Override
     public void onResume() {
         super.onResume ();
 
+        videolist.requestFocus ();
         Menu menu=toolbar.getMenu ();
         MenuItem ourSearchItem = menu.findItem(R.id.search_bar);
 
@@ -193,9 +177,7 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                link=query;
-                new getdetails ().execute (  );
-                progressBar.setVisibility ( View.VISIBLE );
+                processSearch ( query );
                 return true;
             }
 
@@ -207,43 +189,11 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
     }
 
     @Override
-    public void OnDownloadClick(String formatid) {
-        startDownload (formatid);
-    }
-
-    private class getdetails extends AsyncTask<String,String,String>{
-
-        @Override
-        protected String doInBackground(String... strings) {
-            try {
-                videoInfo = YoutubeDL.getInstance ().getInfo ( link );
-                ArrayList<VideoFormat> formats=videoInfo.getFormats ();
-                for (int i=0;i<formats.size ();i++){
-                    VideoFormat videoFormat=formats.get ( i );
-                    if(videoFormat.getWidth ()!=0 && videoFormat.getHeight ()!=0) {
-                        if (!formatid.contains ( videoFormat.getFormatId () )) {
-                            formatid.add ( videoFormat.getFormatId () );
-                            String size = NumberUtils.format ( videoFormat.getFilesize () );
-                            videores.add ( videoFormat.getFormat () + "  -" + size );
-                            ext.add ( videoFormat.getExt () );
-                        }
-                    }
-                }
-            } catch (YoutubeDLException e) {
-                e.printStackTrace ();
-            } catch (InterruptedException e) {
-                e.printStackTrace ();
-            }
-            return null;
-        }
-
-        @Override
-        protected void onPostExecute(String s) {
-            super.onPostExecute ( s );
-            thumbnaillink = videoInfo.getThumbnail ();
-            setAdapters ();
-            hideKeyboard ( getActivity () );
-
+    public void OnDownloadClick(int position) {
+        try {
+            startDownload ( position,url );
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace ();
         }
     }
 
@@ -256,7 +206,7 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
             }
             if (imm != null) {
                 imm.hideSoftInputFromWindow ( view.getWindowToken (), 0 );
-                view.clearFocus ();
+
             }
         }
     }
@@ -275,107 +225,75 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         }
     }
 
-    private void startDownload(String formatid) {
-        if (downloading) {
-            Toast.makeText(mctx, "cannot start download. a download is already in progress", Toast.LENGTH_LONG).show();
-            return;
+
+
+    private void startDownload(int position,String url) throws ExecutionException, InterruptedException {
+
+        if (isStoragePermissionGranted ()) {
+            String Tag = "DownloadWmTag";
+            Data.Builder inputdata = new Data.Builder ();
+            inputdata.putString ( "Url",url );
+            inputdata.putString ( "formatid", formatid.get ( position ) );
+            inputdata.putString ( "Title", videoInfo.getTitle () );
+            if (isWorkScheduled ( Tag )) {
+                Toast.makeText ( mctx, "Download is Already Going On Let it Finish First!!", Toast.LENGTH_SHORT ).show ();
+            }
+            WorkManager workManager = WorkManager.getInstance ( mctx );
+            OneTimeWorkRequest.Builder request = new OneTimeWorkRequest.Builder ( DownloadWM.class );
+            request.addTag ( Tag );
+            request.setInputData ( inputdata.build () );
+            OneTimeWorkRequest request1 = request.build ();
+
+            workManager.enqueueUniqueWork ( Tag, ExistingWorkPolicy.KEEP, request1 );
+
+            Toast.makeText ( mctx, "Download Enqueued check Notification for progress", Toast.LENGTH_SHORT ).show ();
+        }else {
+            Toast.makeText ( mctx, "Grant Storage Permission Then Start Download Again", Toast.LENGTH_SHORT ).show ();
         }
-
-        if (!isStoragePermissionGranted()) {
-            Toast.makeText(mctx, "grant storage permission and retry", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-
-        YoutubeDLRequest request = new YoutubeDLRequest(link);
-        File youtubeDLDir = getDownloadLocation();
-        request.addOption ( "-f",formatid+"+bestaudio" );
-        request.addOption("-o", youtubeDLDir.getAbsolutePath() + "/%(title)s"+"_"+formatid+".%(ext)s");
-
-        showNotification (videoInfo.getTitle ());
-
-        downloading = true;
-
-        Disposable disposable = Observable.fromCallable(() -> YoutubeDL.getInstance().execute(request, callback))
-                .subscribeOn( Schedulers.newThread())
-                .observeOn( AndroidSchedulers.mainThread())
-                .subscribe(youtubeDLResponse -> {
-                    updateNotification ( 0,true ,"Download finished");
-                    //TODO tvCommandOutput.setText(youtubeDLResponse.getOut());
-                    Toast.makeText(mctx, "download successful", Toast.LENGTH_LONG).show();
-                    downloading = false;
-                }, e -> {
-                    if(BuildConfig.DEBUG) Log.e(TAG,  "failed to download", e);
-                    updateNotification ( 0,true ,"Download failed");
-                    //TODO tvCommandOutput.setText(e.getMessage());
-                    Toast.makeText(mctx, "download failed", Toast.LENGTH_LONG).show();
-                    downloading = false;
-                });
-        compositeDisposable.add(disposable);
 
     }
 
-    private File getDownloadLocation() {
-        File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        File youtubeDLDir = new File(downloadsDir, "youtubedl-android");
-        if (!youtubeDLDir.exists()) youtubeDLDir.mkdir();
-        return youtubeDLDir;
+
+    private void processSearch(String url){
+        progressBar.setVisibility ( View.VISIBLE );
+        hideKeyboard ( getActivity () );
+        VidInfoVM vidInfoVM=new ViewModelProvider(VideoFragment.this).get ( VidInfoVM.class );
+        vidInfoVM.getDetails ( url );
     }
 
-    @Override
-    public void onDestroy() {
-        compositeDisposable.dispose();
-        super.onDestroy ();
+    private boolean isWorkScheduled(String tag) {
+        WorkManager instance = WorkManager.getInstance(mctx);
+        ListenableFuture <List<WorkInfo>> statuses = instance.getWorkInfosByTag(tag);
+        try {
+            boolean running = false;
+            List<WorkInfo> workInfoList = statuses.get();
+            for (WorkInfo workInfo : workInfoList) {
+                WorkInfo.State state = workInfo.getState();
+                running = state == WorkInfo.State.RUNNING | state == WorkInfo.State.ENQUEUED;
+            }
+            return running;
+        } catch (ExecutionException | InterruptedException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public void showorhidepb(int loading){
+        switch (loading){
+            case 1:
+                progressBar.setVisibility ( View.GONE );
+
+            case 2:
+                Toast.makeText ( mctx, "loadstate : Loading", Toast.LENGTH_SHORT ).show ();
+                progressBar.setVisibility ( View.GONE );
+
+            case 3:
+                progressBar.setVisibility ( View.GONE );
+        }
     }
 
     @Override
     public void onPause() {
         super.onPause ();
-    }
-
-    public void showNotification(String Title){
-
-        notification = new NotificationCompat.Builder ( mctx,CHANNEL_ID )
-                .setSmallIcon ( android.R.drawable.stat_sys_download )
-                .setContentTitle ( "Downloading "+Title)
-                .setContentText ( "Download In Progress" )
-                .setPriority ( NotificationCompat.PRIORITY_LOW )
-                .setCategory ( NotificationCompat.CATEGORY_PROGRESS)
-                .setProgress ( 100,0,false )
-                .setOngoing ( true )
-                .setAutoCancel ( true )
-                .setOnlyAlertOnce ( true );
-
-        notificationManagerCompat.notify ( 1,notification.build () );
-    }
-
-    public void updateNotification(int Progress, boolean dismiss, @Nullable String Title){
-        if (!dismiss) {
-            notification.setProgress ( 100, Progress, false );
-            notificationManagerCompat.notify ( 1, notification.build () );
-        }else {
-            notification.setSmallIcon ( R.drawable.ic_24px );
-            notification.setContentText ( Title );
-            notification.setProgress ( 0, Progress, false );
-            notification.setOngoing ( false );
-            notificationManagerCompat.notify ( 1, notification.build () );
-        }
-    }
-
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        super.onSaveInstanceState ( outState );
-        outState.putStringArrayList ( "videores",videores );
-        outState.putStringArrayList ( "ext",ext );
-        outState.putStringArrayList ( "formatid",formatid );
-        outState.putString ( "link",link );
-        outState.putString ( "thumbnaillink",thumbnaillink );
-    }
-
-    public void setAdapters(){
-        Glide.with ( mctx ).load ( thumbnaillink ).into ( toolbar_image );
-        vidInfoAdapter=new VidInfoAdapter ( mctx,videores,ext ,formatid, VideoFragment.this );
-        videolist.setAdapter ( vidInfoAdapter );
-        title.setText ( videoInfo.getTitle () );
     }
 }

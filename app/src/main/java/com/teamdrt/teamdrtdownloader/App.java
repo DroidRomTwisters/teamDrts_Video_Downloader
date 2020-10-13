@@ -32,7 +32,7 @@ public class App extends Application {
             NotificationChannel channel=new NotificationChannel (
                     CHANNEL_ID,
                     "Notification For Download Progress",
-                    NotificationManager.IMPORTANCE_LOW
+                    NotificationManager.IMPORTANCE_HIGH
             );
             channel.setDescription ( "Notification For Download Progress" );
             NotificationManager manager=getSystemService ( NotificationManager.class );

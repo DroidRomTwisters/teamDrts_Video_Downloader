@@ -15,8 +15,8 @@ import com.yausername.youtubedl_android.mapper.VideoInfo;
 import java.util.ArrayList;
 
 public class VideoInfoVh extends RecyclerView.ViewHolder {
-    private TextView videoformat,videores;
-    private ImageView viddown;
+    public TextView videoformat,videores;
+    public ImageView viddown;
     VidInfoAdapter.ClickListener clickListener;
     public VideoInfoVh(@NonNull View itemView, final VidInfoAdapter.ClickListener clickListener, ArrayList<String> formatid) {
         super ( itemView );
@@ -26,7 +26,7 @@ public class VideoInfoVh extends RecyclerView.ViewHolder {
         this.clickListener=clickListener;
         viddown.setOnClickListener ( v -> {
             try {
-                clickListener.OnDownloadClick ( formatid.get ( getAdapterPosition () ) );
+                clickListener.OnDownloadClick ( getAdapterPosition () );
             } catch (YoutubeDLException e) {
                 e.printStackTrace ();
             } catch (InterruptedException e) {

@@ -28,40 +28,17 @@ import com.teamdrt.teamdrtdownloader.R;
 
 /**
  * A simple {@link Fragment} subclass.
- * Use the {@link HomeFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
 public class HomeFragment extends Fragment {
    WebView wv;
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    private String mParam1;
-    private String mParam2;
-    private Bundle WebViewState;
-
     public HomeFragment() {
-        // Required empty public constructor
-    }
-    public static HomeFragment newInstance(String param1, String param2) {
-        HomeFragment fragment = new HomeFragment ();
-        Bundle args = new Bundle ();
-        args.putString ( ARG_PARAM1, param1 );
-        args.putString ( ARG_PARAM2, param2 );
-        fragment.setArguments ( args );
-        return fragment;
+
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate ( savedInstanceState );
-        if (getArguments () != null) {
-            mParam1 = getArguments ().getString ( ARG_PARAM1 );
-            mParam2 = getArguments ().getString ( ARG_PARAM2 );
-        }
-        setRetainInstance ( true );
-
     }
 
     @Override
@@ -69,20 +46,18 @@ public class HomeFragment extends Fragment {
                              Bundle savedInstanceState) {
         View v = inflater.inflate( R.layout.fragment_home, container, false);
         wv= v.findViewById (R.id.home_wv);
-        if (savedInstanceState !=null){
-            wv.restoreState ( savedInstanceState );
-        }else {
-            WebSettings webSettings = wv.getSettings ();
-            webSettings.setLoadsImagesAutomatically ( true );
-            webSettings.setJavaScriptEnabled ( true );
-            webSettings.setAppCacheEnabled ( true );
-            webSettings.setAllowFileAccess ( true );
-            webSettings.setJavaScriptCanOpenWindowsAutomatically ( true );
 
-            wv.setScrollBarStyle ( View.SCROLLBARS_INSIDE_OVERLAY );
-            wv.loadUrl ( "http://www.youtube.com/" );
+        WebSettings webSettings = wv.getSettings ();
+        webSettings.setLoadsImagesAutomatically ( true );
+        webSettings.setJavaScriptEnabled ( true );
+        webSettings.setAppCacheEnabled ( true );
+        webSettings.setAllowFileAccess ( true );
+        webSettings.setJavaScriptCanOpenWindowsAutomatically ( true );
 
-            wv.setWebChromeClient ( new MyWebChromeClient ());
+        wv.setScrollBarStyle ( View.SCROLLBARS_INSIDE_OVERLAY );
+        wv.loadUrl ( "http://www.youtube.com/" );
+
+         wv.setWebChromeClient ( new MyWebChromeClient ());
             wv.setWebViewClient ( new WebViewClient () {
                 @Override
                 public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -103,64 +78,40 @@ public class HomeFragment extends Fragment {
                 }
             } );
 
-            wv.setOnKeyListener ( new View.OnKeyListener () {
-                @Override
-                public boolean onKey(View v, int keyCode, KeyEvent event) {
-                    if (event.getAction ()==KeyEvent.ACTION_DOWN){
-                        switch (keyCode){
-                            case KeyEvent.KEYCODE_BACK:
-                                if (wv.canGoBack ()){
-                                    wv.goBack ();
-                                    return true;
-                                }
-                                break;
-                        }
+            wv.setOnKeyListener ( (v12, keyCode, event) -> {
+                if (event.getAction ()==KeyEvent.ACTION_DOWN){
+                    switch (keyCode){
+                        case KeyEvent.KEYCODE_BACK:
+                            if (wv.canGoBack ()){
+                                wv.goBack ();
+                                return true;
+                            }
+                            break;
                     }
-                    return false;
                 }
+                return false;
             } );
-        }
 
-        wv.setOnLongClickListener ( new View.OnLongClickListener () {
-            @Override
-            public boolean onLongClick(View v) {
-                final WebView.HitTestResult hitTestResult = wv.getHitTestResult();
-                ClipboardManager clipboard = (ClipboardManager) MainActivity.mctx.getSystemService( Context.CLIPBOARD_SERVICE);
-                ClipData clip = ClipData.newPlainText("label", hitTestResult.getExtra ());
-                assert clipboard != null;
-                clipboard.setPrimaryClip(clip);
-                Toast.makeText ( MainActivity.mctx, "Link Copied to Clipboard", Toast.LENGTH_SHORT ).show ();
-                return true;
-            }
+
+        wv.setOnLongClickListener ( v1 -> {
+            final WebView.HitTestResult hitTestResult = wv.getHitTestResult();
+            ClipboardManager clipboard = (ClipboardManager) MainActivity.mctx.getSystemService( Context.CLIPBOARD_SERVICE);
+            ClipData clip = ClipData.newPlainText("label", hitTestResult.getExtra ());
+            assert clipboard != null;
+            clipboard.setPrimaryClip(clip);
+            Toast.makeText ( MainActivity.mctx, "Link Copied to Clipboard", Toast.LENGTH_SHORT ).show ();
+            return true;
         } );
         return v;
     }
 
 
-    @Override
-    public void onPause() {
-        super.onPause ();
-
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume ();
-    }
 
 
-    @Override
-    public void onSaveInstanceState(@NonNull Bundle outState) {
-        if (wv!=null) {
-            wv.saveState ( outState );
-        }
-        super.onSaveInstanceState ( outState );
-    }
 
     private class MyWebChromeClient extends WebChromeClient {
         private View mCustomView;
         private WebChromeClient.CustomViewCallback mCustomViewCallback;
-        protected FrameLayout mFullscreenContainer;
         private int mOriginalOrientation;
         private int mOriginalSystemUiVisibility;
 

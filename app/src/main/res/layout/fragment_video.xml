@@ -7,6 +7,18 @@
     tools:context=".Ui.VideoFragment"
     app:layoutDescription="@xml/collapsing_toolbar">
 
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/video_list"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="#ffffff"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView"
+        android:focusableInTouchMode="true"/>
+
    <androidx.appcompat.widget.Toolbar
        android:id="@+id/appbar"
        android:layout_width="match_parent"
@@ -23,16 +35,7 @@
        app:menu="@menu/toolbar_menu"
        />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/video_list"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:background="#ffffff"
-        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/textView" />
+
 
     <ImageView
         android:id="@+id/toolbar_image"
@@ -41,7 +44,7 @@
         android:adjustViewBounds="true"
         android:contentDescription="@null"
         android:background="#000000"
-        android:src="@drawable/logo1"
+        android:src="@mipmap/ic_launcher_round"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/appbar"
@@ -71,5 +74,5 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        android:visibility="invisible"/>
+        android:visibility="gone"/>
 </androidx.constraintlayout.motion.widget.MotionLayout>

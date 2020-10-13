@@ -289,7 +289,7 @@ public class AudioFragment extends Fragment implements AudInfoAdapter.ClickListe
                 .setSmallIcon ( android.R.drawable.stat_sys_download )
                 .setContentTitle ( "Downloading "+Title)
                 .setContentText ( "Download In Progress" )
-                .setPriority ( NotificationCompat.PRIORITY_LOW )
+                .setPriority ( NotificationCompat.PRIORITY_HIGH )
                 .setCategory ( NotificationCompat.CATEGORY_PROGRESS)
                 .setProgress ( 100,0,false )
                 .setOngoing ( true )
