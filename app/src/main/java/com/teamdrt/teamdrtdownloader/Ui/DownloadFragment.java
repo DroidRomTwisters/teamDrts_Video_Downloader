@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.teamdrt.teamdrtdownloader.Adapters.DownloadsAdapter;
@@ -31,6 +32,7 @@ import static com.teamdrt.teamdrtdownloader.Ui.MainActivity.mctx;
  */
 public class DownloadFragment extends Fragment {
 
+    private TextView nod;
     private List<Download> downloads;
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
@@ -74,6 +76,7 @@ public class DownloadFragment extends Fragment {
         adapter=new DownloadsAdapter(downloads);
         adapter.setHasStableIds ( true );
         download_list.setAdapter(adapter);
+        nod=view.findViewById(R.id.textView5);
         init ();
         return view;
 
@@ -83,6 +86,13 @@ public class DownloadFragment extends Fragment {
         DownloadsVM vm= new ViewModelProvider (DownloadFragment.this).get ( DownloadsVM.class );
         vm.getAllDownloads ( mctx );
         vm.allDownloads.observe ( getViewLifecycleOwner (), downloads -> {
+            if (downloads.size ()!=0){
+                nod.setVisibility ( View.GONE );
+                download_list.setVisibility ( View.VISIBLE );
+            }else {
+                nod.setVisibility ( View.VISIBLE );
+                download_list.setVisibility ( View.GONE);
+            }
             adapter.addItems ( downloads );
         } );
     }

@@ -15,6 +15,7 @@ public class App extends Application {
     public static final String CHANNEL_ID="Downloads";
     @Override
     public void onCreate() {
+
         super.onCreate ();
         try {
             YoutubeDL.getInstance().init( getApplicationContext ());

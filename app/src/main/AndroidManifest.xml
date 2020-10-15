@@ -18,6 +18,10 @@
         <activity android:name=".Ui.MainActivity"
             android:launchMode="singleTask"
             android:configChanges="orientation|screenSize|keyboardHidden">
+        </activity>
+        <activity android:name=".Ui.Splash_Screen"
+            android:launchMode="singleTask"
+            android:configChanges="orientation|screenSize|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
