@@ -25,13 +25,18 @@ public class AudioInfoVh extends RecyclerView.ViewHolder {
         audiores=itemView.findViewById ( R.id.VideoResolution );
         this.clickListener=clickListener;
         auddown.setOnClickListener ( v -> {
-        clickListener.OnDownloadClick ( formatid.get ( getAdapterPosition () ) );
+            try {
+                clickListener.OnDownloadClick (  getAdapterPosition ()  );
+            } catch (YoutubeDLException e) {
+                e.printStackTrace ();
+            } catch (InterruptedException e) {
+                e.printStackTrace ();
+            }
         } );
     }
 
     public void setdetail(String audioreso,String ext){
         audioformat.setText ( ext );
         audiores.setText ( audioreso );
-        auddown.setVisibility ( View.VISIBLE );
     }
 }

@@ -1,9 +1,10 @@
 package com.teamdrt.teamdrtdownloader.ViewModels;
 
-
 import android.os.AsyncTask;
+
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
+
 import com.yausername.youtubedl_android.YoutubeDL;
 import com.yausername.youtubedl_android.YoutubeDLException;
 import com.yausername.youtubedl_android.mapper.VideoInfo;
@@ -12,12 +13,12 @@ import static com.teamdrt.teamdrtdownloader.ViewModels.LoadState.INITIAL;
 import static com.teamdrt.teamdrtdownloader.ViewModels.LoadState.LOADED;
 import static com.teamdrt.teamdrtdownloader.ViewModels.LoadState.LOADING;
 
-public class VidInfoVM extends ViewModel {
+public class AudInfoVM extends ViewModel {
 
 
-    public MutableLiveData<LoadState> LoadState=new MutableLiveData <> ( INITIAL );
+    public MutableLiveData <LoadState> LoadState=new MutableLiveData <> ( INITIAL );
     public MutableLiveData<String> thumbnail=new MutableLiveData <> (  );
-    public MutableLiveData<VideoInfo> videoinfo=new MutableLiveData <> (  );
+    public MutableLiveData<VideoInfo> audioinfo=new MutableLiveData <> (  );
     public MutableLiveData<String> url=new MutableLiveData <> (  );
 
 
@@ -29,8 +30,8 @@ public class VidInfoVM extends ViewModel {
         this.thumbnail.postValue ( thumbnail );
     }
 
-    private void updatevideoinfo(VideoInfo videoInfo){
-        this.videoinfo.postValue(videoInfo);
+    private void updateaudioinfo(VideoInfo videoInfo){
+        this.audioinfo.postValue(videoInfo);
     }
 
     private void updateurl(String url){
@@ -42,10 +43,10 @@ public class VidInfoVM extends ViewModel {
         getDetails ( url );
     }
     public void getDetails(String url) {
-        new details ().execute ( url );
+        new AudInfoVM.details ().execute ( url );
     }
 
-    public class details extends AsyncTask<String,String,String>{
+    public class details extends AsyncTask <String,String,String> {
 
         @Override
         protected String doInBackground(String... strings) {
@@ -60,12 +61,12 @@ public class VidInfoVM extends ViewModel {
             }
             if (videoInfo!=null) {
                 updateurl ( url );
-                updatevideoinfo ( videoInfo );
+                updateaudioinfo ( videoInfo );
                 updateLoading ( LOADED );
                 updateThumbanil ( videoInfo.getThumbnail () );
             }
             return null;
         }
     }
-}
 
+}

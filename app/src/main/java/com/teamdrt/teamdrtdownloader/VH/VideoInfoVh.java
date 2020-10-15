@@ -35,11 +35,6 @@ public class VideoInfoVh extends RecyclerView.ViewHolder {
         } );
     }
 
-    public void setdetail(String videoreso,String ext){
-        videoformat.setText ( ext );
-        videores.setText ( videoreso );
-        viddown.setVisibility ( View.VISIBLE );
-    }
 
 
 }

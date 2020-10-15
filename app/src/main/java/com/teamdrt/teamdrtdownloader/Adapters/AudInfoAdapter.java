@@ -44,7 +44,7 @@ public class AudInfoAdapter extends RecyclerView.Adapter<AudioInfoVh>{
     }
 
     public interface ClickListener{
-        void OnDownloadClick(String formatid);
+        void OnDownloadClick(int position) throws YoutubeDLException, InterruptedException;
     }
     @Override
     public int getItemCount() {

@@ -2,7 +2,9 @@ package com.teamdrt.teamdrtdownloader.Ui;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 
@@ -13,6 +15,8 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -28,6 +32,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.URLUtil;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -39,6 +44,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.teamdrt.teamdrtdownloader.Adapters.VidInfoAdapter;
 import com.teamdrt.teamdrtdownloader.R;
 import com.teamdrt.teamdrtdownloader.Utils.NumberUtils;
+import com.teamdrt.teamdrtdownloader.ViewModels.LoadState;
 import com.teamdrt.teamdrtdownloader.ViewModels.VidInfoVM;
 import com.teamdrt.teamdrtdownloader.WorkManager.DownloadWM;
 import com.yausername.youtubedl_android.mapper.VideoFormat;
@@ -57,8 +63,10 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
     private TextView title;
     private RecyclerView videolist;
     private VidInfoAdapter vidInfoAdapter;
-    private ArrayList<String> videores,ext,formatid;
+    private ArrayList<String> videores,ext,formatid,acodec,vcodec;
+    private ArrayList<Long> filesize;
     private ArrayList<VideoFormat> videoFormats;
+    private MutableLiveData<LoadState> loadState=new MutableLiveData <> (LoadState.INITIAL);
 
     private ImageView toolbar_image;
     ProgressBar progressBar;
@@ -66,6 +74,7 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
     VideoInfo videoInfo;
     private String url;
 
+    View view=null;
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
     private NotificationManagerCompat notificationManagerCompat;
@@ -76,7 +85,6 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
 
 
     }
-
 
     public static VideoFragment newInstance(String param1, String param2) {
         VideoFragment fragment = new VideoFragment ();
@@ -106,16 +114,23 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         videores=new ArrayList <> (  );
         ext=new ArrayList <> (  );
         formatid=new ArrayList <> (  );
+        acodec=new ArrayList<>();
+        vcodec=new ArrayList<>();
+        filesize=new ArrayList <> ();
         videolist.setLayoutManager ( new LinearLayoutManager ( mctx ) );
         title=v.findViewById ( R.id.textView );
         notificationManagerCompat=NotificationManagerCompat.from ( mctx );
+        progressBar=v.findViewById ( R.id.progressBar );
+        view=v;
+        vidInfoAdapter=new VidInfoAdapter ( mctx,videores,ext ,formatid, VideoFragment.this );
+        videolist.setAdapter ( vidInfoAdapter );
         return v;
     }
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated ( view, savedInstanceState );
-        progressBar=view.findViewById ( R.id.progressBar );
+        view.requestFocus ();
         initviews ( view );
     }
 
@@ -134,11 +149,16 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
                         String size = NumberUtils.format ( videoFormat.getFilesize () );
                         videores.add ( videoFormat.getFormat () + "  -" + size );
                         ext.add ( videoFormat.getExt () );
+                        acodec.add ( videoFormat.getAcodec () );
+                        vcodec.add ( videoFormat.getVcodec () );
+                        filesize.add ( videoFormat.getFilesize () );
                     }
                 }
             }
-            vidInfoAdapter=new VidInfoAdapter ( mctx,videores,ext ,formatid, VideoFragment.this );
-            videolist.setAdapter ( vidInfoAdapter );
+            vidInfoAdapter.notifyDataSetChanged ();
+            hideKeyboard ( getActivity () );
+
+
         } );
 
         vidInfoVM.thumbnail.observe ( getViewLifecycleOwner(), s -> {
@@ -149,14 +169,9 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
             }
         } );
 
-
         vidInfoVM.url.observe ( getViewLifecycleOwner (),url ->{
             this.url=url;
         } );
-
-        vidInfoVM.LoadState.observe ( getViewLifecycleOwner(), loadstate -> {
-            progressBar.setVisibility ( View.VISIBLE );
-        });
 
     }
 
@@ -168,7 +183,6 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
     public void onResume() {
         super.onResume ();
 
-        videolist.requestFocus ();
         Menu menu=toolbar.getMenu ();
         MenuItem ourSearchItem = menu.findItem(R.id.search_bar);
 
@@ -177,7 +191,19 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         sv.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
-                processSearch ( query );
+                try {
+                    if (URLUtil.isValidUrl(query)) {
+                        progressBar.setVisibility ( View.VISIBLE );
+                        processSearch ( query );
+                    }else {
+                        Context context=mctx;
+                        CharSequence text="Please Enter a Valid Url";
+                        Toast toast = Toast.makeText(context, text, Toast.LENGTH_LONG);
+                        toast.show ();
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace ();
+                }
                 return true;
             }
 
@@ -188,6 +214,7 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         });
     }
 
+
     @Override
     public void OnDownloadClick(int position) {
         try {
@@ -197,7 +224,8 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         }
     }
 
-    public static void hideKeyboard(Activity activity) {
+    public boolean hideKeyboard(Activity activity) {
+
         if (activity!=null) {
             InputMethodManager imm = (InputMethodManager) activity.getSystemService ( Activity.INPUT_METHOD_SERVICE );
             View view = activity.getCurrentFocus ();
@@ -206,9 +234,10 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
             }
             if (imm != null) {
                 imm.hideSoftInputFromWindow ( view.getWindowToken (), 0 );
-
+                return true;
             }
         }
+        return false;
     }
 
     public boolean isStoragePermissionGranted() {
@@ -235,6 +264,10 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
             inputdata.putString ( "Url",url );
             inputdata.putString ( "formatid", formatid.get ( position ) );
             inputdata.putString ( "Title", videoInfo.getTitle () );
+            inputdata.putString ( "acodec",acodec.get ( position ) );
+            inputdata.putString ( "vcodec",vcodec.get ( position ) );
+            inputdata.putLong ( "size",filesize.get ( position ) );
+            inputdata.putString ( "ext",ext.get ( position ) );
             if (isWorkScheduled ( Tag )) {
                 Toast.makeText ( mctx, "Download is Already Going On Let it Finish First!!", Toast.LENGTH_SHORT ).show ();
             }
@@ -254,12 +287,14 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
     }
 
 
-    private void processSearch(String url){
-        progressBar.setVisibility ( View.VISIBLE );
-        hideKeyboard ( getActivity () );
+    private void processSearch(String url) throws InterruptedException {
+        //progressBar.setVisibility ( View.VISIBLE );
         VidInfoVM vidInfoVM=new ViewModelProvider(VideoFragment.this).get ( VidInfoVM.class );
-        vidInfoVM.getDetails ( url );
+        vidInfoVM.loadpb ( url );
+
+
     }
+
 
     private boolean isWorkScheduled(String tag) {
         WorkManager instance = WorkManager.getInstance(mctx);
@@ -278,19 +313,7 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         }
     }
 
-    public void showorhidepb(int loading){
-        switch (loading){
-            case 1:
-                progressBar.setVisibility ( View.GONE );
 
-            case 2:
-                Toast.makeText ( mctx, "loadstate : Loading", Toast.LENGTH_SHORT ).show ();
-                progressBar.setVisibility ( View.GONE );
-
-            case 3:
-                progressBar.setVisibility ( View.GONE );
-        }
-    }
 
     @Override
     public void onPause() {

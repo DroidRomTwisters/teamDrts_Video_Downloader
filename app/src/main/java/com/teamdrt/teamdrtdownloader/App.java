@@ -16,7 +16,6 @@ public class App extends Application {
     @Override
     public void onCreate() {
         super.onCreate ();
-
         try {
             YoutubeDL.getInstance().init( getApplicationContext ());
             FFmpeg.getInstance().init(getApplicationContext ());
@@ -41,4 +40,6 @@ public class App extends Application {
             }
         }
     }
+
+
 }

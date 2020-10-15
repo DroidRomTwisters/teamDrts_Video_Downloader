@@ -12,11 +12,9 @@ public class DownloadsRepository {
     private DownloadsDao downloadsDao;
     private LiveData<List<Download>> allDownloads;
 
-    public DownloadsRepository(Application application){
-        AppDatabse appDatabse=AppDatabse.getInstance ( application );
-        downloadsDao=appDatabse.downloadsDao ();
+    public DownloadsRepository(DownloadsDao downloadsDao){
+        this.downloadsDao=downloadsDao;
         allDownloads=downloadsDao.getAllDownloads ();
-
     }
 
     public void update(Download download){
@@ -25,7 +23,6 @@ public class DownloadsRepository {
     }
 
     public void delete(Download download){
-
         new DeleteDownloadAsyncTask ( downloadsDao ).execute ( download );
     }
 
@@ -68,7 +65,9 @@ public class DownloadsRepository {
             downloadsDao.update (downloads[0]);
             return null;
         }
-    }private static class DeleteDownloadAsyncTask extends AsyncTask<Download,Void,Void>{
+    }
+
+    private static class DeleteDownloadAsyncTask extends AsyncTask<Download,Void,Void>{
 
         private DownloadsDao downloadsDao;
 

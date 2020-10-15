@@ -31,14 +31,10 @@ public class Download {
     @ColumnInfo(name = "media_type")
     private String mediaType;
 
-    public Download(String title, Long timestamp, Long totalsize, Double downloadedPercent, Long downloadSize, String downoadedPath, String mediaType) {
+    public Download(String title, Long timestamp, Double downloadedPercent) {
         this.title = title;
         this.timestamp = timestamp;
-        this.totalsize = totalsize;
         this.downloadedPercent = downloadedPercent;
-        this.downloadSize = downloadSize;
-        this.downoadedPath = downoadedPath;
-        this.mediaType = mediaType;
     }
 
     public void setId(Long id) {
@@ -77,4 +73,31 @@ public class Download {
         return mediaType;
     }
 
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public void setTotalsize(Long totalsize) {
+        this.totalsize = totalsize;
+    }
+
+    public void setDownloadedPercent(Double downloadedPercent) {
+        this.downloadedPercent = downloadedPercent;
+    }
+
+    public void setDownloadSize(Long downloadSize) {
+        this.downloadSize = downloadSize;
+    }
+
+    public void setDownoadedPath(String downoadedPath) {
+        this.downoadedPath = downoadedPath;
+    }
+
+    public void setMediaType(String mediaType) {
+        this.mediaType = mediaType;
+    }
 }
