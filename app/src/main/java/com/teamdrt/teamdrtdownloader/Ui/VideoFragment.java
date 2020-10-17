@@ -54,6 +54,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import io.reactivex.observers.TestObserver;
+
 import static com.teamdrt.teamdrtdownloader.Ui.MainActivity.mctx;
 
 public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListener {
@@ -69,7 +71,7 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
     private MutableLiveData<LoadState> loadState=new MutableLiveData <> (LoadState.INITIAL);
 
     private ImageView toolbar_image;
-    ProgressBar progressBar;
+    public ProgressBar progressBar;
     Toolbar toolbar;
     VideoInfo videoInfo;
     private String url;
@@ -173,6 +175,17 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
             this.url=url;
         } );
 
+        vidInfoVM.LoadState.observe ( getViewLifecycleOwner (),loadState1 -> {
+            if (loadState1==LoadState.LOADING){
+                progressBar.setVisibility ( View.VISIBLE );
+            }
+
+            if (loadState1==LoadState.LOADED){
+                progressBar.setElevation ( 0 );
+                videolist.setElevation ( 2 );
+            }
+        } );
+
     }
 
 
@@ -193,6 +206,8 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
             public boolean onQueryTextSubmit(String query) {
                 try {
                     if (URLUtil.isValidUrl(query)) {
+                        progressBar.setElevation ( 2 );
+                        videolist.setElevation ( 0 );
                         progressBar.setVisibility ( View.VISIBLE );
                         processSearch ( query );
                     }else {
@@ -268,6 +283,7 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
             inputdata.putString ( "vcodec",vcodec.get ( position ) );
             inputdata.putLong ( "size",filesize.get ( position ) );
             inputdata.putString ( "ext",ext.get ( position ) );
+            Toast.makeText ( mctx, ext.get ( position ), Toast.LENGTH_LONG).show ();
             if (isWorkScheduled ( Tag )) {
                 Toast.makeText ( mctx, "Download is Already Going On Let it Finish First!!", Toast.LENGTH_SHORT ).show ();
             }
@@ -291,8 +307,6 @@ public class VideoFragment extends Fragment implements VidInfoAdapter.ClickListe
         //progressBar.setVisibility ( View.VISIBLE );
         VidInfoVM vidInfoVM=new ViewModelProvider(VideoFragment.this).get ( VidInfoVM.class );
         vidInfoVM.loadpb ( url );
-
-
     }
 
 

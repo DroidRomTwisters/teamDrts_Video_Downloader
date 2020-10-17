@@ -175,6 +175,16 @@ public class AudioFragment extends Fragment implements AudInfoAdapter.ClickListe
             this.url=url;
         } );
 
+        audInfoVM.LoadState.observe ( getViewLifecycleOwner (),loadState1 -> {
+            if (loadState1==LoadState.LOADING){
+                progressBar.setVisibility ( View.VISIBLE );
+            }
+
+            if (loadState1==LoadState.LOADED){
+                progressBar.setElevation ( 0 );
+                videolist.setElevation ( 2 );
+            }
+        } );
     }
 
 
@@ -195,6 +205,8 @@ public class AudioFragment extends Fragment implements AudInfoAdapter.ClickListe
             public boolean onQueryTextSubmit(String query) {
                 try {
                     if (URLUtil.isValidUrl(query)) {
+                        progressBar.setElevation ( 2 );
+                        videolist.setElevation ( 0 );
                         progressBar.setVisibility ( View.VISIBLE );
                         processSearch ( query );
                     }else {
@@ -288,11 +300,8 @@ public class AudioFragment extends Fragment implements AudInfoAdapter.ClickListe
 
 
     private void processSearch(String url) throws InterruptedException {
-        //progressBar.setVisibility ( View.VISIBLE );
         AudInfoVM audInfoVM=new ViewModelProvider(AudioFragment.this).get ( AudInfoVM.class );
         audInfoVM.loadpb ( url );
-
-
     }
 
 

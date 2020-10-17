@@ -7,6 +7,17 @@
     tools:context=".Ui.VideoFragment"
     app:layoutDescription="@xml/collapsing_toolbar2"
     android:background="#ffffff">
+    <ProgressBar
+        android:id="@+id/progressBar2"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:visibility="invisible"
+        android:elevation="40dp"/>
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/appbar2"
@@ -64,14 +75,5 @@
         android:fontFamily="sans-serif-medium"
         android:textSize="18sp"/>
 
-    <ProgressBar
-        android:id="@+id/progressBar2"
-        style="?android:attr/progressBarStyle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:visibility="invisible"/>
+
 </androidx.constraintlayout.motion.widget.MotionLayout>

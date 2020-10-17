@@ -45,13 +45,6 @@ public class VidInfoAdapter extends RecyclerView.Adapter<VideoInfoVh> {
     }
 
 
-    public void setDetail(ArrayList<String> videoInfos,ArrayList<String> ext,ArrayList<String> formatid){
-        this.videores=videoInfos;
-        this.ext=ext;
-        this.formatid=formatid;
-        notifyDataSetChanged ();
-    }
-
     public interface ClickListener{
         void OnDownloadClick(int position) throws YoutubeDLException, InterruptedException;
     }

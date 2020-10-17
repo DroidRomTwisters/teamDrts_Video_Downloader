@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,10 +15,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class Splash_Screen extends AppCompatActivity {
+    TextView tv;
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate ( savedInstanceState );
         setContentView ( R.layout.splash_screen );
+        tv=findViewById ( R.id.textView4 );
+        tv.setText ( "Arya with "+getEmojiByUnicode ( 0x2764 )+" & Java" );
 
     }
 
@@ -25,6 +29,7 @@ public class Splash_Screen extends AppCompatActivity {
     protected void onResume() {
         super.onResume ();
         Intent intent = new Intent(this,MainActivity.class);
+        intent.addFlags ( Intent.FLAG_ACTIVITY_CLEAR_TASK );
         SharedPreferences sharedPref = getPreferences ( Context.MODE_PRIVATE );
         String fboot=sharedPref.getString ( "fboot","true" );
         if (fboot.equals ( "true" )){
@@ -48,5 +53,9 @@ public class Splash_Screen extends AppCompatActivity {
             } ,300);
         }
 
+    }
+
+    public String getEmojiByUnicode(int unicode){
+        return new String(Character.toChars(unicode));
     }
 }

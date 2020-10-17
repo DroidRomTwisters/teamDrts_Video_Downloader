@@ -32,7 +32,7 @@ public class DownloadsAdapter extends RecyclerView.Adapter<DownloadsVh> {
 
     public void addItems(List <Download> alldownloads){
         this.alldownloads = alldownloads;
-        notifyItemInserted ( 0 );
+        notifyDataSetChanged ();
     }
 
     @NonNull
@@ -57,8 +57,11 @@ public class DownloadsAdapter extends RecyclerView.Adapter<DownloadsVh> {
         }
         File file=new File(alldownloads.get ( position ).getDownoadedPath ());
         if (file.exists ()) {
+
             holder.cv.setOnClickListener ( v -> holder.viewContent ( alldownloads.get ( position ).getDownoadedPath (), v.getContext () ) );
         }else {
+            //notifyDataSetChanged ();
+            //Toast.makeText ( context, file.getAbsolutePath () , Toast.LENGTH_SHORT ).show ();
             DownloadsDao downloadsDao= AppDatabse.getInstance (context).downloadsDao ();
             DownloadsRepository repository=new DownloadsRepository(downloadsDao);
             repository.delete ( alldownloads.get ( position ) );
@@ -73,7 +76,6 @@ public class DownloadsAdapter extends RecyclerView.Adapter<DownloadsVh> {
 
     @Override
     public long getItemId(int position) {
-
         return position;
     }
 }

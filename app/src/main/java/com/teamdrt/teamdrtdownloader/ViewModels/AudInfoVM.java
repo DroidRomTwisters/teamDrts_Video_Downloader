@@ -54,7 +54,6 @@ public class AudInfoVM extends ViewModel {
             VideoInfo videoInfo = null;
             try {
                 videoInfo = YoutubeDL.getInstance ().getInfo ( url );
-
             } catch (YoutubeDLException | InterruptedException e) {
                 updateLoading ( LOADED );
                 e.printStackTrace ();

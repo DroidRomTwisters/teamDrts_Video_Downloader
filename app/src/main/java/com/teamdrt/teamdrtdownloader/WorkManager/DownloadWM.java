@@ -89,14 +89,21 @@ public class DownloadWM extends Worker {
         File youtubeDLDir = getDownloadLocation();
 
         if (getInputData ().getString ( "acodec" ).equals ( "none" ) && !getInputData ().getString ( "vcodec" ).equals ( "none" )) {
+            request.addOption ( "--merge-output-format","mkv" );
             request.addOption ( "-f", getInputData ().getString ( "formatid" ) + "+bestaudio" );
+            request.addOption("-o", youtubeDLDir.getPath ()+File.separator+getInputData ().getString ( "Title" ).replaceAll ( "[\\W]","" )+"_"+getInputData ().getString ( "formatid" )+".%(ext)s");
+
         }else if (!getInputData ().getString ( "acodec" ).equals ( "none" ) && !getInputData ().getString ( "vcodec" ).equals ( "none" )){
             request.addOption ( "-f", getInputData ().getString ( "formatid" ));
-        }else if (!getInputData ().getString ( "acodec" ).equals ( "none" ) && getInputData ().getString ( "vcodec" ).equals ( "none" )){
-            request.addOption ( "-f", getInputData ().getString ( "formatid" ));
-        }
-        request.addOption("-o", youtubeDLDir.getAbsolutePath() + "/%(title)s"+"_"+getInputData ().getString ( "formatid" )+".%(ext)s");
+            request.addOption("-o", youtubeDLDir.getPath ()+File.separator+getInputData ().getString ( "Title" ).replaceAll ( "[\\W]","" )+"_"+getInputData ().getString ( "formatid" )+".%(ext)s");
 
+        }else if (!getInputData ().getString ( "acodec" ).equals ( "none" ) && getInputData ().getString ( "vcodec" ).equals ( "none" )){
+            request.addOption ( "--audio-format","mp3" );
+            request.addOption ( "-x" );
+            request.addOption ( "-f", getInputData ().getString ( "formatid" ));
+            request.addOption("-o", youtubeDLDir.getPath ()+File.separator+getInputData ().getString ( "Title" ).replaceAll ( "[\\W]","" )+"_"+getInputData ().getString ( "formatid" )+".mp3");
+
+        }
 
         try {
             YoutubeDL.getInstance ().execute ( request, (progress, etaInSeconds) -> {
@@ -121,9 +128,19 @@ public class DownloadWM extends Worker {
         download.setTotalsize ( getInputData ().getLong ( "size",0L ));
         File file;
         if (getInputData ().getString ( "acodec" ).equals ( "none" ) && !getInputData ().getString ( "vcodec" ).equals ( "none" )) {
-            file = new File ( youtubeDLDir.getPath ()+File.separator+getInputData ().getString ( "Title" ).replaceAll ( "[|]","_" )+"_"+getInputData ().getString ( "formatid" )+".mkv" );
+            String ext=getInputData ().getString ( "ext" );
+            if (ext.equals ( "webm" )){
+                ext="mkv";
+            }
+            file = new File ( youtubeDLDir.getPath ()+File.separator+getInputData ().getString ( "Title" ).replaceAll ( "[\\W]","" )+"_"+getInputData ().getString ( "formatid" )+".mkv" );
+        }else if (!getInputData ().getString ( "acodec" ).equals ( "none" ) && !getInputData ().getString ( "vcodec" ).equals ( "none" )){
+            String ext=getInputData ().getString ( "ext" );
+            if (ext.equals ( "webm" )){
+                ext="mkv";
+            }
+            file = new File ( youtubeDLDir.getPath ()+File.separator+getInputData ().getString ( "Title" ).replaceAll ( "[\\W]","" )+"_"+getInputData ().getString ( "formatid" )+"."+ext );
         }else {
-            file = new File ( youtubeDLDir.getPath ()+File.separator+getInputData ().getString ( "Title" ).replaceAll ( "[|]","_" )+"_"+getInputData ().getString ( "formatid" )+"."+getInputData ().getString ( "ext" ) );
+            file = new File ( youtubeDLDir.getPath ()+File.separator+getInputData ().getString ( "Title" ).replaceAll ( "[\\W]","" )+"_"+getInputData ().getString ( "formatid" )+".mp3" );
         }
         Uri treeUri =Uri.parse ( file.getAbsolutePath () );
         download.setDownoadedPath ( treeUri.toString () );
